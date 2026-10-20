@@ -61,4 +61,13 @@ async function route(){
     app.innerHTML=`<div class="empty">载入失败：${esc(error.message)}</div>`;
   }
 }
+function nav(){
+  const archiveMode=new URLSearchParams(location.search).has('archive');
+  document.querySelectorAll('[data-route]').forEach(node=>{
+    node.classList.toggle(
+      'active',
+      node.dataset.route==='/'?!archiveMode:node.dataset.route==='/archive'&&archiveMode
+    );
+  });
+}
 window.onpopstate=route;route();
