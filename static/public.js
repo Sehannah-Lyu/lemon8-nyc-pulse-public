@@ -39,8 +39,18 @@ function selectionStandards(){return `<section class="selection-standards" aria-
 async function latest(id=''){app.classList.remove('admin-main');app.classList.add('report-main');const d=await api(id?`/api/report?id=${encodeURIComponent(id)}`:'/api/reports/latest');if(!d.id){app.innerHTML=`<div class="report-layout"><div class="report-primary"><div class="eyebrow">WEEKLY SIGNALS</div><h1>纽约这周，值得核验的城市信号</h1><div class="empty">尚无已发布周报。请进入审核后台回放样例、审核候选并发布。</div></div>${momentCalendarAside()}</div>`;await loadMomentCalendar();return}activeReportVertical='all';activeReportImportance='all';reportSectionFilters.clear();app.innerHTML=`<div class="report-layout"><div class="report-primary"><div class="eyebrow">WEEKLY SIGNALS · ${esc(d.week_start)}</div><h1>${esc(d.title)}</h1><p class="lead">${esc(d.intro)}</p>${selectionStandards()}<div id="report-filter-controls" class="report-filter-controls"></div>${publicSection('report-this-week','This Week｜连续 7 天',d.this_week,'本周暂无已发布活动。')}${publicSection('report-upcoming','Upcoming｜紧接的 7 天',d.upcoming,'接下来 7 天暂无已发布活动。')}${trendSection(d.beauty_trends||[])}</div>${momentCalendarAside()}</div>`;renderReportSections();await loadMomentCalendar()}
 async function archive(){app.classList.remove('admin-main','report-main');const rows=await api('/api/reports/archive');app.innerHTML=`<div class="eyebrow">ARCHIVE</div><h1>往期周报</h1><p class="lead">按周归档已发布版本，不展示草稿或候选。</p>${rows.length?rows.map(r=>`<a class="archive-row" href="?report=${r.id}" data-report="${r.id}"><strong>${esc(r.title)}</strong><span>${esc(r.week_start)}</span></a>`).join(''):'<div class="empty">暂无归档。</div>'}`;document.querySelectorAll('[data-report]').forEach(a=>a.onclick=e=>{e.preventDefault();history.pushState({},'',`?report=${a.dataset.report}`);latest(a.dataset.report)})}
 
+let publicSnapshot;
+async function staticSnapshot(){
+  if(!publicSnapshot){
+    publicSnapshot=fetch('static/public-data.json',{cache:'no-store'}).then(async response=>{
+      if(!response.ok)throw new Error('公开周报数据载入失败');
+      return response.json();
+    });
+  }
+  return publicSnapshot;
+}
 async function api(path){
-  const data=window.__NYC_PULSE_STATIC__;
+  const data=await staticSnapshot();
   const url=new URL(path,location.origin);
   if(url.pathname==='/api/reports/latest')return data.latest;
   if(url.pathname==='/api/reports/archive')return data.archive;
